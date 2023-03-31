@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    canvas {
+      border: 5px solid black;
+      background-color: rgba(152, 118, 84, 0.473);
+    }
+    
+    #game-container {
+    position: relative;
+    width: 400px;
+    height: 400px;
+    margin: auto;
+    border: 5px solid black;
+    background-color: rgba(179, 152, 0, 0.212);
+  }
+
+  #overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			color: black;
+			font-size: 2em;
+			font-family: Arial, sans-serif;
+			z-index: 100;
+		}
+
+  #game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    text-align: center;
+    cursor: pointer;
+  }
+    
+    </style>
+</head>
+<body>
+  <div class = background></div>
+  <canvas width="400" height="400" id="game"></canvas>
+  <div id="overlay">
+  Hit 'Enter' To Play!
+  </div>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+
+var grid = 20;
+var count = 0;
+
+
+var gameArea = {top: 0, bottom: canvas.height, left: 0, right: canvas.width};
+
+  // when snake dies, shows "GAME OVER" and "Click to play again", when doing so, the page refreshes for the game to start again
+ 
+  function gameOver() {
+  // check if game over message has already been displayed
+  if (document.getElementById("game-over")) {
+    return;
+  }
+apple = null;
+
+  // create a container div
+  var container = document.createElement("div");
+  container.classList.add("container");
+  document.body.appendChild(container);
+
+  // calculate score
+var score = snake.cells.length - 3;
+
+// add total score text
+var scoreText = document.createElement("p");
+scoreText.innerHTML = "Total Plants Eaten: " + score;
+container.appendChild(scoreText);
+
+
+  // add game over text
+  var gameOverText = document.createElement("h1");
+  gameOverText.innerHTML = "GAME OVER!";
+  gameOverText.addEventListener("click", function(event) {
+    if (event.button === 0) {
+      location.reload();
+    }
+  });
+  gameOverText.oncontextmenu = function() { return false; };
+  container.appendChild(gameOverText);
+
+  // add click to play again text
+  var playAgainText = document.createElement("p");
+  playAgainText.innerHTML = "Click to play again!";
+  playAgainText.addEventListener("click", function(event) {
+    if (event.button === 0) {
+      location.reload();
+    }
+   
+  });
+  playAgainText.oncontextmenu = function() { return false; };
+  container.appendChild(playAgainText);
+
+  // give the container a unique ID to prevent duplicates
+  container.id = "game-over";
+}
+
+
+
+var snake = {
+  x: 160,
+  y: 160,
+
+
+  // snake velocity. moves one grid length every frame in either the x or y direction
+  dx: grid,
+  dy: 0,
+  
+  // keep track of all grids the snake body occupies
+  cells: [],
+  
+  // length of the snake. grows when eating an apple
+  maxCells: 3
+};
+var apple = {
+  x: 320,
+  y: 320
+};
+
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+
+// game loop
+function loop() {
+  requestAnimationFrame(loop);
+
+
+  // slow game loop to 15 fps instead of 60 (60/15 = 4)
+  if (++count < 4) {
+    return;
+  }
+
+
+  count = 0;
+  context.clearRect(0,0,canvas.width,canvas.height);
+
+
+  // move snake by it's velocity
+  snake.x += snake.dx;
+  snake.y += snake.dy;
+
+  if (snake.x < 0 || snake.x >= canvas.width || snake.y < 0 || snake.y >= canvas.height) {
+    gameOver(snake);
+    return;
+  }
+  
+  
+  snake.cells.unshift({x: snake.x, y: snake.y});
+
+
+  // remove cells as we move away from them
+  if (snake.cells.length > snake.maxCells) {
+    snake.cells.pop();
+  }
+
+  // draw apple
+  context.fillStyle = 'green' ;
+  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+
+  // draw snake one cell at a time
+  context.fillStyle = '#e75480';
+  snake.cells.forEach(function(cell, index) {
+    
+    context.fillRect(cell.x, cell.y, grid-1, grid-1);  
+
+
+    // snake ate apple
+    if (cell.x === apple.x && cell.y === apple.y) {
+      snake.maxCells++;
+
+      apple.x = getRandomInt(0, 20) * grid;
+      apple.y = getRandomInt(0, 20) * grid;
+    }
+
+
+    // check collision with snake body
+    for (var i = index + 1; i < snake.cells.length; i++) {
+      
+      // when snake head hits part of body, restart
+      if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+       gameOver(snake);
+      }
+    }
+
+
+
+  });
+}
+
+
+// check for key input.
+document.addEventListener('keydown', function(e) {
+  
+  // left arrow key
+  if (e.which === 37 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+  // up arrow key
+  else if (e.which === 38 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // right arrow key
+  else if (e.which === 39 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  // down arrow key
+  else if (e.which === 40 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+  // W key
+  else if (e.which === 87 && snake.dy === 0) {
+    snake.dy = -grid;
+    snake.dx = 0;
+  }
+  // S key
+  else if (e.which === 83 && snake.dy === 0) {
+    snake.dy = grid;
+    snake.dx = 0;
+  }
+  // D key 
+  else if (e.which === 68 && snake.dx === 0) {
+    snake.dx = grid;
+    snake.dy = 0;
+  }
+  // A key
+  else if (e.which === 65 && snake.dx === 0) {
+    snake.dx = -grid;
+    snake.dy = 0;
+  }
+});
+document.addEventListener('keydown', function(e) {
+  if (e.which === 13) {
+    requestAnimationFrame(loop);
+    document.getElementById('overlay').style.display = 'none';
+}
+});
+
+</script>
+</body>
+</html>
